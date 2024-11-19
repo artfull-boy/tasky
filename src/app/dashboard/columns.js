@@ -111,8 +111,8 @@ export const columns = [
  
       return (
         <div className="flex gap-2">
-            <Button>Edit {row.original.id}</Button>
-            <Button variant="destructive">Delete</Button>
+            <Button className="w-fit h-fit text-[12px]">Edit {row.original.id}</Button>
+            <Button className="w-fit h-fit text-[12px]" variant="destructive">Delete</Button>
         </div>
       )
     },
