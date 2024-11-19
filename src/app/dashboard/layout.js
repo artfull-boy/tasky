@@ -2,7 +2,7 @@
 import NavLink from "../../components/ui/NavLink";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 import {
   DropdownMenu,
@@ -11,9 +11,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export default function layout({ header, children }) {
-  const [showingNavigationDropdown, setShowingNavigationDropdown] =
-    useState(false);
+export default function Layout({ children }) {
+  const currentPath = usePathname();
+  const navLinks = [
+    { href: "/dashboard", label: "Dashboard" },
+    { href: "/dashboard/projects", label: "Projects" },
+    { href: "/dashboard/tasks", label: "All Tasks" },
+    { href: "/dashboard/my_tasks", label: "My Tasks" },
+    { href: "/dashboard/users", label: "Users" },
+  ];
 
   return (
     <div className="min-h-screen">
@@ -22,7 +28,7 @@ export default function layout({ header, children }) {
           <div className="flex h-16 justify-between">
             <div className="flex">
               <div className="flex shrink-0 items-center">
-                <Link href="/">
+                <Link href="/dashboard">
                   <Image
                     src={"/logo.png"}
                     width={100}
@@ -33,31 +39,24 @@ export default function layout({ header, children }) {
               </div>
 
               <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                <NavLink href={"#"} active={true}>
-                  Dashboard
-                </NavLink>
-                <NavLink href={"#"} active={false}>
-                  Projects
-                </NavLink>
-                <NavLink href={"#"} active={false}>
-                  All Tasks
-                </NavLink>
-                <NavLink href={"#"} active={false}>
-                  My Tasks
-                </NavLink>
-                <NavLink href={"#"} active={false}>
-                  Users
-                </NavLink>
+                {navLinks.map((link) => (
+                  <NavLink
+                    key={link.href}
+                    href={link.href}
+                    active={currentPath === link.href} // Compare currentPath with href
+                  >
+                    {link.label}
+                  </NavLink>
+                ))}
               </div>
             </div>
 
             <DropdownMenu>
-              <DropdownMenuTrigger className="flex gap-2 items-center text-sm"> Username <ChevronDown/></DropdownMenuTrigger>
+              <DropdownMenuTrigger className="flex gap-2 items-center text-sm">
+                Username <ChevronDown />
+              </DropdownMenuTrigger>
               <DropdownMenuContent>
-                <DropdownMenuItem >
-                    
-                    Log Out
-                </DropdownMenuItem>
+                <DropdownMenuItem>Log Out</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
