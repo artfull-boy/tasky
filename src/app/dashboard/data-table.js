@@ -68,7 +68,7 @@ export function DataTable({ columns, data }) {
                   ( // Adjust based on your column ID for "status"
                     <span
                       className={
-                        "px-2 py-1 rounded text-white " +
+                        "px-2 py-1 rounded " +
                         TASK_STATUS_CLASS_MAP[row.original.status.toLowerCase()] // Ensure consistent key lookup
                       }
                     >
@@ -78,7 +78,7 @@ export function DataTable({ columns, data }) {
                   (
                     <span
                       className={
-                        "px-2 py-1 rounded text-white " +
+                        "px-2 py-1 rounded " +
                         TASK_PRIORITY_CLASS_MAP[row.original.priority.toLowerCase()] // Ensure consistent key lookup
                       }
                     >
