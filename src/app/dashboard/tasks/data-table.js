@@ -13,7 +13,12 @@ import { Calendar as CalendarIcon, Pencil, Trash2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
-import { TASK_PRIORITY_CLASS_MAP, TASK_PRIORITY_TEXT_MAP, TASK_STATUS_CLASS_MAP, TASK_STATUS_TEXT_MAP } from "@/lib/const.jsx";
+import {
+  TASK_PRIORITY_CLASS_MAP,
+  TASK_PRIORITY_TEXT_MAP,
+  TASK_STATUS_CLASS_MAP,
+  TASK_STATUS_TEXT_MAP,
+} from "@/lib/const.jsx";
 import {
   Table,
   TableBody,
@@ -58,31 +63,75 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
-import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
-
-
-
-export function DataTable({ columns, data, onProjectUpdate, onProjectDelete }) {
-  const [projectName, setProjectName] = useState("");
+export function DataTable({ columns, data, onTaskUpdate, onTaskDelete }) {
+  const [taskName, setTaskName] = useState("");
   const [description, setDescription] = useState("");
   const [deadline, setDeadline] = useState();
   const [status, setStatus] = useState("");
+  const [priority, setPriority] = useState("");
+  const [project, setProject] = useState("");
+  const [assignedTo, setAssignedTo] = useState("");
   const [error, setError] = useState(false);
   const [sorting, setSorting] = useState([]);
-  const [isClicked, setIsClicked] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
   const [successDialog, setSuccessDialog] = useState(false);
   const [openDialogDelete, setOpenDialogDelete] = useState(false);
-  const [editingProject, setEditingProject] = useState(null);
+  const [editingTask, setEditingTask] = useState(null);
+  const [taskIdToDelete, setTaskIdToDelete] = useState();
   const divRef = useRef(null);
 
+  // State for populating dropdowns
+  const [projects, setProjects] = useState([]);
+  const [users, setUsers] = useState([]);
+
+  // Fetch projects and users on component mount
+  useEffect(() => {
+    const fetchProjectsAndUsers = async () => {
+      try {
+        const [projectsResponse, usersResponse] = await Promise.all([
+          fetch("http://127.0.0.1:8001/api/admin/projects", {
+            headers: {
+              Authorization: `Token ${localStorage.getItem("token")}`,
+            },
+          }),
+          fetch("http://127.0.0.1:8001/api/admin/users", {
+            headers: {
+              Authorization: `Token ${localStorage.getItem("token")}`,
+            },
+          }),
+        ]);
+
+        const projectsData = await projectsResponse.json();
+        const usersData = await usersResponse.json();
+
+        setProjects(projectsData);
+        setUsers(usersData);
+      } catch (error) {
+        console.error("Failed to fetch projects and users", error);
+      }
+    };
+
+    fetchProjectsAndUsers();
+  }, []);
+
   const handleOpenDialog = () => {
-    setEditingProject(null);
-    setProjectName("");
+    setEditingTask(null);
+    setTaskName("");
     setDescription("");
     setDeadline(null);
     setStatus("");
+    setPriority("");
+    setProject("");
+    setAssignedTo("");
     setOpenDialog(true);
   };
 
@@ -110,36 +159,39 @@ export function DataTable({ columns, data, onProjectUpdate, onProjectDelete }) {
   const [isButtonDisabled, setIsButtonDisabled] = useState(true);
 
   useEffect(() => {
-    setIsButtonDisabled(projectName && description && deadline && status);
+    setIsButtonDisabled(taskName && description && deadline && status && assignedTo && priority && project);
     setError(false);
-  }, [projectName, description, deadline, status]);
+  }, [taskName, description, deadline, status, assignedTo, priority, project]);
 
-  const [projectIdToDelete, setProjectIdToDelete] = useState(null);
 
   const handleOpenDeleteDialog = (project) => {
-    setProjectIdToDelete(project.id); // Store the project ID
+    setTaskIdToDelete(project.id); // Store the project ID
     setOpenDialogDelete(true); // Open the dialog
   };
-  
+
   const handleCloseDeleteDialog = () => {
-    setProjectIdToDelete(null); // Clear the ID
+    setTaskIdToDelete(null); // Clear the ID
     setOpenDialogDelete(false); // Close the dialog
   };
 
-  const handleEditProject = (project) => {
-    setEditingProject(project);
-    setProjectName(project.project_name);
-    setDescription(project.description);
-    setDeadline(new Date(project.due_date));
-    setStatus(project.status);
+  const handleEditTask = async (task) => {
+    
+    setEditingTask(task);
+    setTaskName(task.task_name);
+    setDescription(task.description);
+    setDeadline(new Date(task.due_date));
+    setStatus(task.status);
+    setPriority(task.priority);
+    setProject(task.project);
+    setAssignedTo(task.assigned_to);
     setOpenDialog(true);
   };
 
-  const handleDeleteProject = async () => {
-    if (!projectIdToDelete) return;
+  const handleDeleteTask = async () => {
+    if (!taskIdToDelete) return;
     try {
       const res = await fetch(
-        `http://127.0.0.1:8001/api/admin/delete_project/${projectIdToDelete}`,
+        `http://127.0.0.1:8001/api/admin/delete_task/${taskIdToDelete}`,
         {
           method: "DELETE",
           headers: {
@@ -149,7 +201,7 @@ export function DataTable({ columns, data, onProjectUpdate, onProjectDelete }) {
       );
 
       if (res.ok) {
-        onProjectDelete();
+        onTaskDelete();
         handleCloseDeleteDialog();
       } else {
         console.error("Delete failed");
@@ -159,35 +211,39 @@ export function DataTable({ columns, data, onProjectUpdate, onProjectDelete }) {
     }
   };
 
-  const handleCreateProject = async (e) => {
+  const handleCreateTask = async (e) => {
     e.preventDefault();
-    const res = await fetch("http://127.0.0.1:8001/api/admin/create_user", {
+    const res = await fetch("http://127.0.0.1:8001/api/admin/create_task", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Token ${localStorage.getItem("token")}`,
       },
       body: JSON.stringify({
-        project_name: projectName,
+        task_name: taskName,
         description: description,
-        deadline: deadline,
+        due_date: deadline,
         status: status,
+        priority: priority,
+        project: project,
+        assigned_to: assignedTo
       }),
     });
 
     if (res.ok) {
-      onProjectUpdate();
-      handleOpenSuccessDialog();
+      onTaskUpdate();
+      setOpenDialog(false);
+      setSuccessDialog(true);
     } else {
       setError(true);
     }
   };
-
-  const handleUpdateProject = async (e) => {
+  
+  const handleUpdateTask = async (e) => {
     e.preventDefault();
     try {
       const res = await fetch(
-        `http://127.0.0.1:8001/api/admin/update_project/${editingProject.id}`,
+        `http://127.0.0.1:8001/api/admin/update_task/${editingTask.id}`,
         {
           method: "PUT",
           headers: {
@@ -195,18 +251,22 @@ export function DataTable({ columns, data, onProjectUpdate, onProjectDelete }) {
             Authorization: `Token ${localStorage.getItem("token")}`,
           },
           body: JSON.stringify({
-            project_name: projectName,
+            task_name: taskName,
             description: description,
-            deadline: deadline,
+            due_date: deadline,
             status: status,
+            priority: priority,
+            project: project,
+            assigned_to: assignedTo
           }),
         }
       );
 
       if (res.ok) {
-        onProjectUpdate();
-        handleOpenSuccessDialog();
-        setEditingProject(null);
+        onTaskUpdate();
+        setOpenDialog(false);
+        setSuccessDialog(true);
+        setEditingTask(null);
       } else {
         setError(true);
       }
@@ -216,29 +276,29 @@ export function DataTable({ columns, data, onProjectUpdate, onProjectDelete }) {
     }
   };
 
-  const handleSubmit = editingProject
-    ? handleUpdateProject
-    : handleCreateProject;
+
+  const handleSubmit = editingTask ? handleUpdateTask : handleCreateTask;
+
 
   const modifiedColumns = columns.map((column) => {
     if (column.id === "actions") {
       return {
         ...column,
         cell: ({ row }) => {
-          const project = row.original;
+          const task = row.original;
           return (
             <div className="flex gap-2">
               <Button
                 className="w-fit h-fit text-[12px]"
                 variant="outline"
-                onClick={() => handleEditProject(project)}
+                onClick={() => handleEditTask(task)}
               >
                 <Pencil className="mr-2 h-4 w-4" /> Edit
               </Button>
               <Button
                 className="w-fit h-fit text-[12px]"
                 variant="destructive"
-                onClick={() => handleOpenDeleteDialog(project)}
+                onClick={() => handleOpenDeleteDialog(task)}
               >
                 <Trash2 className="mr-2 h-4 w-4" /> Delete
               </Button>
@@ -249,6 +309,7 @@ export function DataTable({ columns, data, onProjectUpdate, onProjectDelete }) {
     }
     return column;
   });
+
 
   const table = useReactTable({
     data,
@@ -290,9 +351,9 @@ export function DataTable({ columns, data, onProjectUpdate, onProjectDelete }) {
       <div className="flex items-center py-4 gap-4">
         <Input
           placeholder="Filter by Task Name"
-          value={table.getColumn("project_name")?.getFilterValue() ?? ""}
+          value={table.getColumn("task_name")?.getFilterValue() ?? ""}
           onChange={(event) =>
-            table.getColumn("project_name")?.setFilterValue(event.target.value)
+            table.getColumn("task_name")?.setFilterValue(event.target.value)
           }
           className="max-w-sm"
         />
@@ -313,108 +374,165 @@ export function DataTable({ columns, data, onProjectUpdate, onProjectDelete }) {
             <SelectItem value="completed">Completed</SelectItem>
           </SelectContent>
         </Select>
+        <Select
+          value={table.getColumn("priority")?.getFilterValue() ?? ""}
+          onValueChange={(value) =>
+            table.getColumn("priority")?.setFilterValue(value)
+          }
+          className="max-w-sm"
+        >
+          <SelectTrigger className="w-[300px]">
+            <SelectValue placeholder="Priority" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem>All</SelectItem>
+            <SelectItem value="low">Low</SelectItem>
+            <SelectItem value="medium">Medium</SelectItem>
+            <SelectItem value="high">High</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       <Dialog open={openDialog} onOpenChange={setOpenDialog}>
         <DialogTrigger></DialogTrigger>
         <DialogContent className="w-[429px] flex flex-col gap-[24px]">
           <DialogHeader className={"flex flex-col gap-[0px]"}>
             <DialogTitle className={`text-[30px]`}>
-              {editingProject ? "Edit Project" : "Add Project"}
+              {editingTask ? "Edit Task" : "Add Task"}
             </DialogTitle>
             <DialogDescription>
-              {editingProject
-                ? "Update the information for this project"
-                : "Please fill the information to add a project"}
+              {editingTask
+                ? "Update the information for this task"
+                : "Please fill the information to add a task"}
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-[32px]">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-[16px]">
             <div className="flex flex-col gap-[8px]">
-              <label
-                className={`text-[14px] font-medium`}
-                htmlFor="project_name"
-              >
-                Project Name
-                <span className="text-[#EF4444]">*</span>
+              <label className={`text-[14px] font-medium`} htmlFor="task_name">
+                Task Name <span className="text-[#EF4444]">*</span>
               </label>
               <Input
-                id="name"
                 type="text"
-                value={projectName}
-                onChange={(e) => {
-                  setProjectName(e.target.value);
-                }}
-                placeholder="Web Development Project"
-                className={`${error ? "border-[#F53D6B]" : "border-[#ff]"}`}
+                value={taskName}
+                onChange={(e) => setTaskName(e.target.value)}
+                placeholder="Enter task name"
                 required
               />
             </div>
+            
             <div className="flex flex-col gap-[8px]">
-              <label className={`text-[14px] font-medium`} htmlFor="desc">
-                Project Description <span className="text-[#EF4444]">*</span>
+              <label className={`text-[14px] font-medium`} htmlFor="description">
+                Description <span className="text-[#EF4444]">*</span>
               </label>
               <Textarea
-                id="desc"
-                type="text"
                 value={description}
-                onChange={(e) => {
-                  setDescription(e.target.value);
-                }}
-                className={`${error ? "border-[#F53D6B]" : "border-[#ff]"}`}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Enter task description"
                 required
               />
             </div>
-            <div className="flex flex-col gap-[8px]">
-              <label className={`text-[14px] font-medium`} htmlFor="status">
-                Status <span className="text-[#EF4444]">*</span>
-              </label>
-              <Select
-                onValueChange={(value) => setStatus(value)}
-                value={status}
-              >
-                <SelectTrigger
-                  className={` flex items-center justify-between gap-[8px] border-[1px]`}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-[8px]">
+                <label className={`text-[14px] font-medium`}>
+                  Project <span className="text-[#EF4444]">*</span>
+                </label>
+                <Select 
+                  value={project} 
+                  onValueChange={setProject}
+                  required
                 >
-                  <SelectValue
-                    placeholder="Status"
-                    className={` font-normal text-[12px]`}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectLabel>Status</SelectLabel>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Project" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projects.map((proj) => (
+                      <SelectItem key={proj.id} value={proj.id.toString()}>
+                        {proj.project_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex flex-col gap-[8px]">
+                <label className={`text-[14px] font-medium`}>
+                  Assigned To <span className="text-[#EF4444]">*</span>
+                </label>
+                <Select 
+                  value={assignedTo} 
+                  onValueChange={setAssignedTo}
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select User" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {users.map((user) => (
+                      <SelectItem key={user.id} value={user.id.toString()}>
+                        {user.username}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-[8px]">
+                <label className={`text-[14px] font-medium`}>
+                  Status <span className="text-[#EF4444]">*</span>
+                </label>
+                <Select 
+                  value={status} 
+                  onValueChange={setStatus}
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Status" />
+                  </SelectTrigger>
+                  <SelectContent>
                     <SelectItem value="pending">Pending</SelectItem>
                     <SelectItem value="in_progress">In Progress</SelectItem>
                     <SelectItem value="completed">Completed</SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-              <p className={`text-[#F53D6B] ${error ? "block" : "hidden"}`}>
-                An error occurred, Please Try later.
-              </p>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex flex-col gap-[8px]">
+                <label className={`text-[14px] font-medium`}>
+                  Priority <span className="text-[#EF4444]">*</span>
+                </label>
+                <Select 
+                  value={priority} 
+                  onValueChange={setPriority}
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Priority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+
             <div className="flex flex-col gap-[8px]">
-              <label
-                className={`text-[14px] font-medium`}
-                htmlFor="project_name"
-              >
-                Project Deadline
-                <span className="text-[#EF4444]">*</span>
+              <label className={`text-[14px] font-medium`}>
+                Due Date <span className="text-[#EF4444]">*</span>
               </label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant={"outline"}
                     className={cn(
-                      " justify-start text-left font-normal",
+                      "justify-start text-left font-normal",
                       !deadline && "text-muted-foreground"
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {deadline ? (
-                      format(deadline, "PPP")
-                    ) : (
-                      <span>Pick a date</span>
-                    )}
+                    {deadline ? format(deadline, "PPP") : <span>Pick a date</span>}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
@@ -427,21 +545,26 @@ export function DataTable({ columns, data, onProjectUpdate, onProjectDelete }) {
                 </PopoverContent>
               </Popover>
             </div>
+
+            {error && (
+              <p className="text-red-500 text-sm">
+                An error occurred. Please try again later.
+              </p>
+            )}
+
             <div className="flex items-center justify-between w-full">
               <Button
                 type="button"
                 variant="outline"
-                className={` w-fit`}
                 onClick={handleCloseDialog}
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
-                className={` w-fit`}
                 disabled={!isButtonDisabled}
               >
-                {editingProject ? "Update" : "Continue"}
+                {editingTask ? "Update Task" : "Create Task"}
               </Button>
             </div>
           </form>
@@ -458,10 +581,13 @@ export function DataTable({ columns, data, onProjectUpdate, onProjectDelete }) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <Button variant="outline" onClick={() => setOpenDialogDelete(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setOpenDialogDelete(false)}
+            >
               Cancel
             </Button>
-            <Button variant="destructive" onClick={() => handleDeleteProject()}>
+            <Button variant="destructive" onClick={() => handleDeleteTask()}>
               Delete
             </Button>
           </AlertDialogFooter>
@@ -474,7 +600,7 @@ export function DataTable({ columns, data, onProjectUpdate, onProjectDelete }) {
               <div className="flex flex-col items-center justify-center gap-[20px]">
                 <img src="/success.svg" width={80} height={80}></img>
                 <h2 className="text-center leading-[36px] tracking-[-0.75%] ">
-                  {editingProject
+                  {editingTask
                     ? "Project Updated Successfully"
                     : "Project Created Successfully"}
                 </h2>
@@ -482,7 +608,7 @@ export function DataTable({ columns, data, onProjectUpdate, onProjectDelete }) {
             </DialogTitle>
             <DialogDescription>
               <p className="text-[14px] leading-[24px] text-center">
-                {editingProject
+                {editingTask
                   ? "The project details have been updated!"
                   : "The project is added to the list of projects!"}
               </p>
@@ -523,34 +649,48 @@ export function DataTable({ columns, data, onProjectUpdate, onProjectDelete }) {
                   data-state={row.getIsSelected() && "selected"}
                 >
                   {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
-                  {cell.column.id === "status" ? 
-                  ( // Adjust based on your column ID for "status"
-                    <span
-                      className={
-                        "px-2 py-1 rounded " +
-                        TASK_STATUS_CLASS_MAP[row.original.status.toLowerCase()] // Ensure consistent key lookup
-                      }
-                    >
-                      {TASK_STATUS_TEXT_MAP[row.original.status.toLowerCase()]} {/* Human-readable text */}
-                    </span>
-                  ) : cell.column.id === "priority" ?
-                  (
-                    <span
-                      className={
-                        "px-2 py-1 rounded " +
-                        TASK_PRIORITY_CLASS_MAP[row.original.priority.toLowerCase()] // Ensure consistent key lookup
-                      }
-                    >
-                      {TASK_PRIORITY_TEXT_MAP[row.original.priority.toLowerCase()]} {/* Human-readable text */}
-                    </span>
-                  ) 
-                  :
-                    (flexRender(cell.column.columnDef.cell, cell.getContext()))
-                  }
-                </TableCell>
-                
-                ))}
+                    <TableCell key={cell.id}>
+                      {cell.column.id === "status" ? (
+                        // Adjust based on your column ID for "status"
+                        <span
+                          className={
+                            "px-2 py-1 rounded " +
+                            TASK_STATUS_CLASS_MAP[
+                              row.original.status.toLowerCase()
+                            ] // Ensure consistent key lookup
+                          }
+                        >
+                          {
+                            TASK_STATUS_TEXT_MAP[
+                              row.original.status.toLowerCase()
+                            ]
+                          }{" "}
+                          {/* Human-readable text */}
+                        </span>
+                      ) : cell.column.id === "priority" ? (
+                        <span
+                          className={
+                            "px-2 py-1 rounded " +
+                            TASK_PRIORITY_CLASS_MAP[
+                              row.original.priority.toLowerCase()
+                            ] // Ensure consistent key lookup
+                          }
+                        >
+                          {
+                            TASK_PRIORITY_TEXT_MAP[
+                              row.original.priority.toLowerCase()
+                            ]
+                          }{" "}
+                          {/* Human-readable text */}
+                        </span>
+                      ) : (
+                        flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )
+                      )}
+                    </TableCell>
+                  ))}
                 </TableRow>
               ))
             ) : (
