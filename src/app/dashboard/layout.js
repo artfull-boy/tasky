@@ -2,7 +2,7 @@
 import NavLink from "../../components/ui/NavLink";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 import {
   DropdownMenu,
@@ -10,9 +10,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 
 export default function Layout({ children }) {
   const currentPath = usePathname();
+  const router = useRouter();
   const navLinks = [
     { href: "/dashboard", label: "Dashboard" },
     { href: "/dashboard/projects", label: "Projects" },
@@ -20,7 +22,19 @@ export default function Layout({ children }) {
     { href: "/dashboard/my_tasks", label: "My Tasks" },
     { href: "/dashboard/users", label: "Users" },
   ];
+  const handleLogout = async () => {
+    router.push("/");
 
+    const res = await fetch("localhost:8002/api/auth/logout", {
+      method: "POST",
+      body: JSON.stringify({
+        token: localStorage.getItem("token"),
+      }),
+    });
+    if (res.ok) {
+      localStorage.removeItem("token");
+    }
+  };
   return (
     <div className="min-h-screen">
       <nav className="border-b border-accent">
@@ -56,7 +70,9 @@ export default function Layout({ children }) {
                 Username <ChevronDown />
               </DropdownMenuTrigger>
               <DropdownMenuContent>
-                <DropdownMenuItem>Log Out</DropdownMenuItem>
+                <DropdownMenuItem>
+                  <button onClick={handleLogout}>Log Out</button>
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
