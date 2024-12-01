@@ -342,7 +342,7 @@ export function DataTable({ columns, data, onTaskUpdate, onTaskDelete }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex justify-between items-center w-full">
-        <p className="text-[30px] font-semibold">All Tasks</p>
+        <p className="text-[30px] font-semibold">My Tasks</p>
         <Button onClick={handleOpenDialog}>
           <Plus />
           Create Task
