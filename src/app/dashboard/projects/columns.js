@@ -17,7 +17,7 @@ export const columns = [
       ),
   },
   {
-      accessorKey: "project_name",
+      accessorKey: "name",
       header: ({ column }) => (
           <Button
               variant="ghost"
@@ -32,7 +32,7 @@ export const columns = [
           href={`/dashboard/projects/${row.original.id}`} 
               style={{ color: 'inherit', textDecoration: 'none' }}
           >
-              {row.original.project_name}
+              {row.original.name}
           </a>
       ),
   },
@@ -49,7 +49,7 @@ export const columns = [
       ),
   },
   {
-      accessorKey: "created_date",
+      accessorKey: "created_at",
       header: ({ column }) => (
           <Button
               variant="ghost"
@@ -73,9 +73,9 @@ export const columns = [
       ),
   },
   {
-      accessorKey: "created_by",
+      accessorKey: "createdByName",
       header: "Created By",
-      id: "created_by",
+      id: "createdByName",
   },
   {
       header: "Actions",
