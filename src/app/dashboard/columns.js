@@ -76,20 +76,7 @@ export const columns = [
         )
       },
   },
-  {
-    accessorKey: "created_date",
-    header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Created Date
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        )
-      },
-  },
+  
   {
     accessorKey: "due_date",
     header: ({ column }) => {
@@ -111,7 +98,7 @@ export const columns = [
  
       return (
         <div className="flex gap-2">
-            <Button className="w-fit h-fit text-[12px]">Edit {row.original.id}</Button>
+            <Button className="w-fit h-fit text-[12px]">Edit</Button>
             <Button className="w-fit h-fit text-[12px]" variant="destructive">Delete</Button>
         </div>
       )
