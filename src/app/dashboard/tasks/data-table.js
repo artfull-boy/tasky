@@ -98,12 +98,12 @@ export function DataTable({ columns, data, onTaskUpdate, onTaskDelete }) {
     const fetchProjectsAndUsers = async () => {
       try {
         const [projectsResponse, usersResponse] = await Promise.all([
-          fetch("http://127.0.0.1:8001/api/admin/projects", {
+          fetch("http://localhost:8000/api/projects", {
             headers: {
               Authorization: `Token ${localStorage.getItem("token")}`,
             },
           }),
-          fetch("http://127.0.0.1:8001/api/admin/users", {
+          fetch("http://localhost:8002/api/users", {
             headers: {
               Authorization: `Token ${localStorage.getItem("token")}`,
             },
@@ -177,7 +177,7 @@ export function DataTable({ columns, data, onTaskUpdate, onTaskDelete }) {
   const handleEditTask = async (task) => {
     
     setEditingTask(task);
-    setTaskName(task.task_name);
+    setTaskName(task.name);
     setDescription(task.description);
     setDeadline(new Date(task.due_date));
     setStatus(task.status);
@@ -191,7 +191,7 @@ export function DataTable({ columns, data, onTaskUpdate, onTaskDelete }) {
     if (!taskIdToDelete) return;
     try {
       const res = await fetch(
-        `http://127.0.0.1:8001/api/admin/delete_task/${taskIdToDelete}`,
+        `http://localhost:8001/api/tasks/${taskIdToDelete}`,
         {
           method: "DELETE",
           headers: {
@@ -213,19 +213,19 @@ export function DataTable({ columns, data, onTaskUpdate, onTaskDelete }) {
 
   const handleCreateTask = async (e) => {
     e.preventDefault();
-    const res = await fetch("http://127.0.0.1:8001/api/admin/create_task", {
+    const res = await fetch("http://localhost:8001/api/tasks", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Token ${localStorage.getItem("token")}`,
       },
       body: JSON.stringify({
-        task_name: taskName,
+        name: taskName,
         description: description,
         due_date: deadline,
         status: status,
         priority: priority,
-        project: project,
+        project_id: project,
         assigned_to: assignedTo
       }),
     });
@@ -243,7 +243,7 @@ export function DataTable({ columns, data, onTaskUpdate, onTaskDelete }) {
     e.preventDefault();
     try {
       const res = await fetch(
-        `http://127.0.0.1:8001/api/admin/update_task/${editingTask.id}`,
+        `http://localhost:8001/api/tasks/${editingTask.id}`,
         {
           method: "PUT",
           headers: {
@@ -251,12 +251,12 @@ export function DataTable({ columns, data, onTaskUpdate, onTaskDelete }) {
             Authorization: `Token ${localStorage.getItem("token")}`,
           },
           body: JSON.stringify({
-            task_name: taskName,
+            name: taskName,
             description: description,
             due_date: deadline,
             status: status,
             priority: priority,
-            project: project,
+            project_id: project,
             assigned_to: assignedTo
           }),
         }
