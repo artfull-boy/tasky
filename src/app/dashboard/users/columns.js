@@ -19,7 +19,7 @@ export const columns = [
           },
     },
     {
-        accessorKey: "user_name",
+        accessorKey: "name",
         header: ({ column }) => {
             return (
               <Button
@@ -47,7 +47,7 @@ export const columns = [
         },
   },
     {
-        accessorKey: "created_date",
+        accessorKey: "created_at",
         header: ({ column }) => {
             return (
               <Button
