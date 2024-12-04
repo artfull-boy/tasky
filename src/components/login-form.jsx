@@ -21,8 +21,11 @@ export function LoginForm() {
     e.preventDefault()
     try {
       const res = await fetch(
-        "localhost:8002/api/auth/login", {
+        "http://localhost:8002/api/auth/login", {
           method:"POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
           body: JSON.stringify({
             email: email,
             password: password,
@@ -30,8 +33,8 @@ export function LoginForm() {
         }
       )
       if(res.ok) {
-        const data = await res.json();
-        localStorage.setItem("token",data.token)
+        const result = await res.json();
+        localStorage.setItem("token",result.data.token)
         router.push("/dashboard")
       }
     }

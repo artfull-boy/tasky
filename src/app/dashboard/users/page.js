@@ -8,13 +8,13 @@ export default function page() {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch("http://127.0.0.1:8001/api/admin/users", {
+      const res = await fetch("http://localhost:8002/api/users", {
         headers: {
-          Authorization: `Token ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
       const data = await res.json();
-      setUsers(data);
+      setUsers(data.data.data);
     } catch {
       setUsers([
         {
