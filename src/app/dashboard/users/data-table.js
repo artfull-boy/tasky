@@ -113,7 +113,7 @@ export function DataTable({ columns, data, onUserUpdate, onUserDelete }) {
 
   const handleEditUser = (user) => {
     setEditingUser(user);
-    setUserName(user.user_name);
+    setUserName(user.name);
     setEmail(user.email);
     setPassword(user.password);
     setOpenDialog(true);
@@ -123,11 +123,11 @@ export function DataTable({ columns, data, onUserUpdate, onUserDelete }) {
     if (!userIdToDelete) return;
     try {
       const res = await fetch(
-        `http://127.0.0.1:8001/api/admin/delete_user/${userIdToDelete}`,
+        `http://localhost:8002/api/users/${userIdToDelete}`,
         {
           method: "DELETE",
           headers: {
-            Authorization: `Token ${localStorage.getItem("token")}`,
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         }
       );
@@ -143,41 +143,20 @@ export function DataTable({ columns, data, onUserUpdate, onUserDelete }) {
     }
   };
 
-  const handleCreateUser = async (e) => {
-    e.preventDefault();
-    const res = await fetch("http://127.0.0.1:8001/api/admin/create_user", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Token ${localStorage.getItem("token")}`,
-      },
-      body: JSON.stringify({
-        user_name: userName,
-        email: email,
-      }),
-    });
-
-    if (res.ok) {
-      onUserUpdate();
-      handleOpenSuccessDialog();
-    } else {
-      setError(true);
-    }
-  };
-
+ 
   const handleUpdateUser = async (e) => {
     e.preventDefault();
     try {
       const res = await fetch(
-        `http://127.0.0.1:8001/api/admin/update_user/${editingUser.id}`,
+        `http://localhost:8002/api/users/${editingUser.id}`,
         {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Token ${localStorage.getItem("token")}`,
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
           body: JSON.stringify({
-            user_name: userName,
+            name: userName,
             email: email,
             password: password,
           }),
@@ -197,7 +176,7 @@ export function DataTable({ columns, data, onUserUpdate, onUserDelete }) {
     }
   };
 
-  const handleSubmit = editingUser ? handleUpdateUser : handleCreateUser;
+  const handleSubmit =  handleUpdateUser
 
   const modifiedColumns = columns.map((column) => {
     if (column.id === "actions") {
@@ -257,17 +236,14 @@ export function DataTable({ columns, data, onUserUpdate, onUserDelete }) {
     <div className="flex flex-col gap-4">
       <div className="flex justify-between items-center w-full">
         <p className="text-[30px] font-semibold">Users</p>
-        <Button onClick={handleOpenDialog}>
-          <Plus />
-          Add User
-        </Button>
+        
       </div>
       <div className="flex items-center py-4 gap-4">
         <Input
           placeholder="Filter by User Name"
-          value={table.getColumn("user_name")?.getFilterValue() ?? ""}
+          value={table.getColumn("name")?.getFilterValue() ?? ""}
           onChange={(event) =>
-            table.getColumn("user_name")?.setFilterValue(event.target.value)
+            table.getColumn("name")?.setFilterValue(event.target.value)
           }
           className="max-w-sm"
         />
@@ -287,7 +263,7 @@ export function DataTable({ columns, data, onUserUpdate, onUserDelete }) {
           </DialogHeader>
           <form onSubmit={handleSubmit} className="flex flex-col gap-[32px]">
             <div className="flex flex-col gap-[8px]">
-              <label className={`text-[14px] font-medium`} htmlFor="user_name">
+              <label className={`text-[14px] font-medium`} htmlFor="name">
                 User Name
                 <span className="text-[#EF4444]">*</span>
               </label>
