@@ -58,10 +58,14 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
-import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-
-
-
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export function DataTable({ columns, data, onProjectUpdate, onProjectDelete }) {
   const [projectName, setProjectName] = useState("");
@@ -120,7 +124,7 @@ export function DataTable({ columns, data, onProjectUpdate, onProjectDelete }) {
     setProjectIdToDelete(project.id); // Store the project ID
     setOpenDialogDelete(true); // Open the dialog
   };
-  
+
   const handleCloseDeleteDialog = () => {
     setProjectIdToDelete(null); // Clear the ID
     setOpenDialogDelete(false); // Close the dialog
@@ -128,7 +132,7 @@ export function DataTable({ columns, data, onProjectUpdate, onProjectDelete }) {
 
   const handleEditProject = (project) => {
     setEditingProject(project);
-    setProjectName(project.project_name);
+    setProjectName(project.name);
     setDescription(project.description);
     setDeadline(new Date(project.due_date));
     setStatus(project.status);
@@ -139,7 +143,7 @@ export function DataTable({ columns, data, onProjectUpdate, onProjectDelete }) {
     if (!projectIdToDelete) return;
     try {
       const res = await fetch(
-        `http://127.0.0.1:8001/api/admin/delete_project/${projectIdToDelete}`,
+        `http://localhost:8000/api/projects/${projectIdToDelete}`,
         {
           method: "DELETE",
           headers: {
@@ -161,25 +165,38 @@ export function DataTable({ columns, data, onProjectUpdate, onProjectDelete }) {
 
   const handleCreateProject = async (e) => {
     e.preventDefault();
-    const res = await fetch("http://127.0.0.1:8001/api/admin/create_user", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Token ${localStorage.getItem("token")}`,
-      },
-      body: JSON.stringify({
-        project_name: projectName,
-        description: description,
-        deadline: deadline,
-        status: status,
-      }),
-    });
+    try {
+      const res = await fetch("http://localhost:8000/api/projects", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          // Add any required auth headers
+          // "Authorization": `Bearer ${yourToken}`
+        },
+        body: JSON.stringify({
+          name: projectName,
+          description: description,
+          due_date: deadline,
+          status: status,
+          created_by: "1",
+          updated_by: "1",
+        }), // Ensure correct data structure
+      });
 
-    if (res.ok) {
-      onProjectUpdate();
-      handleOpenSuccessDialog();
-    } else {
-      setError(true);
+      if (!res.ok) {
+        // Handle non-200 responses
+        const errorBody = await res.text();
+        console.error("Server responded with:", res.status, errorBody);
+        throw new Error(`HTTP error! status: ${res.status}`);
+      } else {
+        onProjectUpdate();
+        handleOpenSuccessDialog();
+      }
+
+      // Handle successful response
+    } catch (error) {
+      console.error("Error creating project:", error);
+      // Handle network errors or exceptions
     }
   };
 
@@ -187,17 +204,17 @@ export function DataTable({ columns, data, onProjectUpdate, onProjectDelete }) {
     e.preventDefault();
     try {
       const res = await fetch(
-        `http://127.0.0.1:8001/api/admin/update_project/${editingProject.id}`,
+        `http://localhost:8000/api/projects/${editingProject.id}`,
         {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Token ${localStorage.getItem("token")}`,
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
           body: JSON.stringify({
-            project_name: projectName,
+            name: projectName,
             description: description,
-            deadline: deadline,
+            due_date: deadline,
             status: status,
           }),
         }
@@ -290,9 +307,9 @@ export function DataTable({ columns, data, onProjectUpdate, onProjectDelete }) {
       <div className="flex items-center py-4 gap-4">
         <Input
           placeholder="Filter by Project Name"
-          value={table.getColumn("project_name")?.getFilterValue() ?? ""}
+          value={table.getColumn("name")?.getFilterValue() ?? ""}
           onChange={(event) =>
-            table.getColumn("project_name")?.setFilterValue(event.target.value)
+            table.getColumn("name")?.setFilterValue(event.target.value)
           }
           className="max-w-sm"
         />
@@ -329,10 +346,7 @@ export function DataTable({ columns, data, onProjectUpdate, onProjectDelete }) {
           </DialogHeader>
           <form onSubmit={handleSubmit} className="flex flex-col gap-[32px]">
             <div className="flex flex-col gap-[8px]">
-              <label
-                className={`text-[14px] font-medium`}
-                htmlFor="project_name"
-              >
+              <label className={`text-[14px] font-medium`} htmlFor="name">
                 Project Name
                 <span className="text-[#EF4444]">*</span>
               </label>
@@ -393,10 +407,7 @@ export function DataTable({ columns, data, onProjectUpdate, onProjectDelete }) {
               </p>
             </div>
             <div className="flex flex-col gap-[8px]">
-              <label
-                className={`text-[14px] font-medium`}
-                htmlFor="project_name"
-              >
+              <label className={`text-[14px] font-medium`} htmlFor="due_date">
                 Project Deadline
                 <span className="text-[#EF4444]">*</span>
               </label>
@@ -458,7 +469,10 @@ export function DataTable({ columns, data, onProjectUpdate, onProjectDelete }) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <Button variant="outline" onClick={() => setOpenDialogDelete(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setOpenDialogDelete(false)}
+            >
               Cancel
             </Button>
             <Button variant="destructive" onClick={() => handleDeleteProject()}>
