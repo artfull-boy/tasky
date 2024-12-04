@@ -16,58 +16,36 @@ import {
 import { DataTable } from "./data-table";
 import { columns } from "./columns";
 
-async function getData(){
-    // Fetch data from your API here.
-    return [
-        {
-          "id": 1,
-          "project_name": "Website Redesign",
-          "task_name":"Frontend",
-          "status": "in_progress",
-          "priority": "High",
-          "created_date": "2024-10-01",
-          "due_date": "2024-12-31",
-        },
-        {
-            "id": 1,
-            "project_name": "Website Redesign",
-            "task_name":"Frontend",
-            "status": "in_progress",
-            "priority": "High",
-            "created_date": "2024-10-01",
-            "due_date": "2024-12-31",
-          },
-          {
-            "id": 1,
-            "project_name": "Website Redesign",
-            "task_name":"Frontend",
-            "status": "pending",
-            "priority": "High",
-            "created_date": "2024-10-01",
-            "due_date": "2024-12-31",
-          },
-          {
-            "id": 1,
-            "project_name": "Website Redesign",
-            "task_name":"Frontend",
-            "status": "completed",
-            "priority": "High",
-            "created_date": "2024-10-01",
-            "due_date": "2024-12-31",
-          },
-          {
-            "id": 1,
-            "project_name": "Website Redesign",
-            "task_name":"Frontend",
-            "status": "pending",
-            "priority": "High",
-            "created_date": "2024-10-01",
-            "due_date": "2024-12-31",
-          },
 
-      ]
-      
+async function getData() {
+  const tasksResponse = await fetch("http://localhost:8001/api/tasks");
+  const projectsResponse = await fetch("http://localhost:8000/api/projects");
+
+  if (!tasksResponse.ok || !projectsResponse.ok) {
+    throw new Error("Failed to fetch data from APIs");
   }
+
+  const tasksData = await tasksResponse.json();
+  const projectsData = await projectsResponse.json();
+
+  // Map project IDs to names for quick lookup
+  const projectMap = {};
+  projectsData.data.forEach((project) => {
+    projectMap[project.id] = project.name;
+  });
+
+  // Combine tasks with project names and limit to 5 tasks
+  const combinedData = tasksData.data.slice(0, 5).map((task) => ({
+    id: task.id,
+    task_name: task.name,
+    project_name: projectMap[task.project_id] || "Unknown Project",
+    status: task.status,
+    priority: task.priority,
+    due_date: task.due_date,
+  }));
+  console.log(tasksData)
+  return combinedData;
+}
 
 
 export default async function page() {
